@@ -1,4 +1,4 @@
-package ua.leirimnad.bombgameserver;
+package ua.leirimnad.bombgameserver.networking;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

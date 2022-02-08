@@ -1,4 +1,4 @@
-package ua.leirimnad.bombgameserver;
+package ua.leirimnad.bombgameserver.networking;
 
 import org.json.simple.JSONObject;
 import org.springframework.web.socket.TextMessage;
