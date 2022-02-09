@@ -6,15 +6,18 @@ import org.json.simple.parser.ParseException;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import ua.leirimnad.bombgameserver.BombGameServer;
 import ua.leirimnad.bombgameserver.words.WordManager;
 
 import java.io.IOException;
 
 public class WebSocketServer extends TextWebSocketHandler {
+    private final BombGameServer server;
     private final MessageDistributor messageDistributor;
 
     public WebSocketServer() {
-        messageDistributor = new MessageDistributor();
+        server = new BombGameServer();
+        messageDistributor = new MessageDistributor(server);
 
     }
 
