@@ -6,6 +6,7 @@ import org.json.simple.parser.ParseException;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import ua.leirimnad.bombgameserver.words.WordManager;
 
 import java.io.IOException;
 
@@ -14,6 +15,7 @@ public class WebSocketServer extends TextWebSocketHandler {
 
     public WebSocketServer() {
         messageDistributor = new MessageDistributor();
+
     }
 
     @Override

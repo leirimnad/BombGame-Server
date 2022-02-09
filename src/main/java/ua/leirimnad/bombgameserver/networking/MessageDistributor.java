@@ -8,7 +8,10 @@ import java.io.IOException;
 
 public class MessageDistributor {
 
-    public void process(String action, JSONObject data, WebSocketSession session){
+    public MessageDistributor() {
+    }
+
+    public void process(String action, JSONObject data, WebSocketSession session) throws IOException {
 
         // some code later.
 
@@ -18,6 +21,9 @@ public class MessageDistributor {
             e.printStackTrace();
         }
 
+
     }
+
+
 
 }
