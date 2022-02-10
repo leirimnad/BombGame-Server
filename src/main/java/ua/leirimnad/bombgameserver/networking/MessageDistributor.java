@@ -15,21 +15,32 @@ public class MessageDistributor {
         this.server = server;
     }
 
-    public void process(String action, JSONObject data, WebSocketSession session) throws IOException {
+    public void process(JSONObject request, WebSocketSession session) throws IOException {
 
-        // some code later.
-
-        try {
-            session.sendMessage(new TextMessage("You sent a "+action+" message."));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        String action = getAction(request);
+        String instantQueryId = getInstantQueryId(request);
 
         if (Objects.equals(action, "GET_TABLE_LIST")){
-            this.server.tableManager.processGetTableList(session);
+            if (instantQueryId == null) WebSocketServer.informBadRequest(session);
+            else this.server.tableManager.processGetTableList(session, instantQueryId);
+        }
+
+        if (Objects.equals(action, "GET_SYLLABLE")){
+            double min = (double) request.get("min");
+            double max = (double) request.get("max");
+
+            this.server.wordManager.processGetSyllable(session, (float)min, (float)max);
         }
 
 
+    }
+
+    private static String getInstantQueryId(JSONObject request){
+        return (String) request.get("request_id");
+    }
+
+    private static String getAction(JSONObject request){
+        return (String) request.get("action");
     }
 
 

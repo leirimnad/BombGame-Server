@@ -2,10 +2,10 @@ package ua.leirimnad.bombgameserver.tables;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import ua.leirimnad.bombgameserver.networking.server_queries.ServerActionQuery;
+import ua.leirimnad.bombgameserver.networking.server_queries.ServerInstantQueryResponse;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerQuery;
 import ua.leirimnad.bombgameserver.networking.server_queries.TABLE_LIST;
 
@@ -20,9 +20,9 @@ public class TableManager {
         this.tables = new ArrayList<>();
     }
 
-    public void processGetTableList(WebSocketSession session) throws IOException {
+    public void processGetTableList(WebSocketSession session, String instantQueryId) throws IOException {
         ObjectWriter objectWriter = new ObjectMapper().writer();
-        ServerQuery response = new ServerQuery(new TABLE_LIST(tables));
+        ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new TABLE_LIST(tables));
         session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
     }
 }

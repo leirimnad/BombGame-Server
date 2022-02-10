@@ -18,7 +18,6 @@ public class WebSocketServer extends TextWebSocketHandler {
     public WebSocketServer() {
         server = new BombGameServer();
         messageDistributor = new MessageDistributor(server);
-
     }
 
     @Override
@@ -44,12 +43,10 @@ public class WebSocketServer extends TextWebSocketHandler {
             return;
         }
 
-        JSONObject data = (JSONObject) jo.get("data");
-
-        messageDistributor.process(action, data, session);
+        messageDistributor.process(jo, session);
     }
 
-    private void informBadRequest(WebSocketSession session){
+    public static void informBadRequest(WebSocketSession session){
         try {
             session.sendMessage(new TextMessage("{\"error\": \"Bad request\"}"));
         } catch (IOException e) {
