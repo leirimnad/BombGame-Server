@@ -1,4 +1,4 @@
-package ua.leirimnad.bombgameserver.networking.server_queries;
+package ua.leirimnad.bombgameserver.networking.server_queries.data;
 
 import ua.leirimnad.bombgameserver.tables.Table;
 

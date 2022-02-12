@@ -2,7 +2,6 @@ package ua.leirimnad.bombgameserver.words;
 
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
-import ua.leirimnad.bombgameserver.networking.server_queries.ServerActionQuery;
 
 import java.io.*;
 import java.net.URISyntaxException;
@@ -90,18 +89,11 @@ public class WordManager {
 
     public String getSyllable(int len, float minComplexity, float maxComplexity){
         if (len < 2 || len > 4) return null;
-        Map<String, Float> syllables;
-        switch (len){
-            case 2:
-                syllables = syllables_2;
-                break;
-            case 3:
-                syllables = syllables_3;
-                break;
-            default:
-                syllables = syllables_4;
-                break;
-        }
+        Map<String, Float> syllables = switch (len) {
+            case 2 -> syllables_2;
+            case 3 -> syllables_3;
+            default -> syllables_4;
+        };
 
         List<String> applicable = syllables.entrySet().stream()
                 .filter(entry -> (entry.getValue() >= minComplexity && entry.getValue() <= maxComplexity))

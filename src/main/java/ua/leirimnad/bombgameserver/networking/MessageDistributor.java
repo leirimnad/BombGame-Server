@@ -21,18 +21,34 @@ public class MessageDistributor {
         String action = getAction(request);
         String instantQueryId = getInstantQueryId(request);
 
-        if (Objects.equals(action, "GET_TABLE_LIST")){
-            if (instantQueryId == null) WebSocketServer.informBadRequest(session);
-            else this.server.tableManager.processGetTableList(session, instantQueryId);
+        // action == null
+
+        switch (action){
+            case "GET_TABLE_LIST" -> {
+                if (instantQueryId == null) WebSocketServer.informBadRequest(session);
+                else this.server.tableManager.processGetTableList(session, instantQueryId);
+            }
+
+            case "CREATE_TABLE" -> {
+                if (instantQueryId == null){
+                    WebSocketServer.informBadRequest(session);
+                }
+                else {
+                    String playerName = (String) request.get("player_name");
+                    String tableName = (String) request.get("table_name");
+
+                    this.server.tableManager.processCreateTable(session, instantQueryId, playerName, tableName);
+                }
+            }
+
+            // to delete
+            case "GET_SYLLABLE" -> {
+                double min = (double) request.get("min");
+                double max = (double) request.get("max");
+
+                this.server.wordManager.processGetSyllable(session, (float)min, (float)max);
+            }
         }
-
-        if (Objects.equals(action, "GET_SYLLABLE")){
-            double min = (double) request.get("min");
-            double max = (double) request.get("max");
-
-            this.server.wordManager.processGetSyllable(session, (float)min, (float)max);
-        }
-
 
     }
 
