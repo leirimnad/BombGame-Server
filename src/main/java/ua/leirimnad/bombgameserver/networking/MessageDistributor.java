@@ -8,6 +8,7 @@ import ua.leirimnad.bombgameserver.BombGameServer;
 import java.io.IOException;
 import java.util.Objects;
 
+// TODO что такое instantQueryId
 public class MessageDistributor {
     private final BombGameServer server;
 

@@ -9,6 +9,7 @@ public class BombGameServer {
     public TableManager tableManager;
     public WordManager wordManager;
 
+    // TODO make IOC
     public BombGameServer() {
         this.playerManager = new PlayerManager();
         this.tableManager = new TableManager();

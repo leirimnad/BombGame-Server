@@ -29,6 +29,7 @@ public class WordManager {
             InputStreamReader isr = new InputStreamReader(fis);
             BufferedReader reader = new BufferedReader(isr);
 
+            // TODO все слова будут храниться в оперативной памяти?
             while (true) {
                 String data = reader.readLine();
                 if (data == null) break;
