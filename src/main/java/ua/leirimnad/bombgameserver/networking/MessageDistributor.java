@@ -21,7 +21,7 @@ public class MessageDistributor {
         String action = getAction(request);
         String instantQueryId = getInstantQueryId(request);
 
-        // action == null
+        // action == null --> проверяется в WebSocketServer
 
         switch (action){
             case "GET_TABLE_LIST" -> {
@@ -39,14 +39,6 @@ public class MessageDistributor {
 
                     this.server.tableManager.processCreateTable(session, instantQueryId, playerName, tableName);
                 }
-            }
-
-            // to delete
-            case "GET_SYLLABLE" -> {
-                double min = (double) request.get("min");
-                double max = (double) request.get("max");
-
-                this.server.wordManager.processGetSyllable(session, (float)min, (float)max);
             }
         }
 

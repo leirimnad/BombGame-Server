@@ -1,28 +1,28 @@
 package ua.leirimnad.bombgameserver.players;
 
-import org.springframework.web.socket.WebSocketSession;
-
 public class Player {
     private String id;
     private String name;
     private int lives;
-    private boolean isHost;
     private boolean isSpectating;
 
     public Player(String id, String name){
         this.id = id;
         this.name = name;
         this.lives = 3;
-        this.isHost = false;
         this.isSpectating = true;
     }
 
-    public boolean isHost() {
-        return isHost;
+    public String getId() {
+        return id;
     }
 
-    public void setHost(boolean host) {
-        isHost = host;
+    public String getName() {
+        return name;
+    }
+
+    public int getLives() {
+        return lives;
     }
 
     public boolean isSpectating() {
