@@ -7,15 +7,13 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerInstantQueryResponse;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerQuery;
+import ua.leirimnad.bombgameserver.networking.server_queries.data.CREATE_TABLE_FAILURE;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.CREATE_TABLE_SUCCESS;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.TABLE_LIST;
 import ua.leirimnad.bombgameserver.players.Player;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class TableManager {
     private final List<Table> tables;
@@ -35,26 +33,37 @@ public class TableManager {
 
     public void processCreateTable(WebSocketSession session, String instantQueryId,
                                    String playerName, String tableName) throws IOException {
-        String sessionId = session.getId();
-        Player host = new Player(sessionId, playerName);
-        host.setHost(true);
-        Table table = new Table(generateRandomId(ID_LENGTH), tableName);
-        table.addPlayer(host);
+        String playerId = session.getId();
+        if(tableMap.containsKey(playerId)){
+            ObjectWriter objectWriter = new ObjectMapper().writer();
+            ServerQuery response = new ServerInstantQueryResponse(
+                    instantQueryId,
+                    new CREATE_TABLE_FAILURE("The player " + playerId +
+                            " cannot create a table because he is already playing at another table.")
+            );
+            session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
+        }
+        else {
+            Player host = new Player(playerId, playerName);
 
-        tables.add(table);
-        tableMap.put(sessionId, table);
+            String tableId = generateRandomId(ID_LENGTH);
+            Table table = new Table(tableId, tableName, host);
 
-        ObjectWriter objectWriter = new ObjectMapper().writer();
-        ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new CREATE_TABLE_SUCCESS(table));
-        session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
+            tables.add(table);
+            tableMap.put(playerId, table);
+
+            ObjectWriter objectWriter = new ObjectMapper().writer();
+            ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new CREATE_TABLE_SUCCESS(table));
+            session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
+        }
     }
 
     private String generateRandomId(int length){
         String id;
         do{
-            id = RandomStringUtils.random(length, true, false);
+            id = RandomStringUtils.random(length, true, false).toUpperCase(Locale.ROOT);
         }
-        while(!idExists(id));
+        while(idExists(id));
 
         return id;
     }
