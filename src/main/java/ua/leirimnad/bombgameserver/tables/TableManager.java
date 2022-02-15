@@ -61,9 +61,9 @@ public class TableManager {
     private String generateRandomId(int length){
         String id;
         do{
-            id = RandomStringUtils.random(length, true, false).toUpperCase(Locale.ROOT);
+            id = RandomStringUtils.random(length, true, false);
         }
-        while(idExists(id));
+        while(!idExists(id));
 
         return id;
     }
