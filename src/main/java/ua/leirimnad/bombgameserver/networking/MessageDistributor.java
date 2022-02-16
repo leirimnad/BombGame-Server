@@ -34,10 +34,31 @@ public class MessageDistributor {
                     WebSocketServer.informBadRequest(session);
                 }
                 else {
-                    String playerName = (String) request.get("player_name");
                     String tableName = (String) request.get("table_name");
+                    String playerName = (String) request.get("player_name");
 
-                    this.server.tableManager.processCreateTable(session, instantQueryId, playerName, tableName);
+                    this.server.tableManager.processCreateTable(session, instantQueryId, tableName, playerName);
+                }
+            }
+
+            case "JOIN_TABLE" -> {
+                if (instantQueryId == null){
+                    WebSocketServer.informBadRequest(session);
+                }
+                else{
+                    String tableId = (String) request.get("table_id");
+                    String playerName = (String) request.get("player_name");
+
+                    this.server.tableManager.processJoinTable(session, instantQueryId, tableId, playerName);
+                }
+            }
+
+            case "LEAVE_TABLE" -> {
+                if (instantQueryId == null){
+                    WebSocketServer.informBadRequest(session);
+                }
+                else{
+                    this.server.tableManager.processLeaveTable(session, instantQueryId);
                 }
             }
         }
