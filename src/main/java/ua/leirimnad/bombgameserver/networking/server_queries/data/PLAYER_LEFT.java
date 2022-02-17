@@ -1,5 +1,6 @@
 package ua.leirimnad.bombgameserver.networking.server_queries.data;
 
+import ua.leirimnad.bombgameserver.networking.server_queries.ServerQueryData;
 import ua.leirimnad.bombgameserver.players.Player;
 
 public class PLAYER_LEFT implements ServerQueryData {
@@ -13,4 +14,5 @@ public class PLAYER_LEFT implements ServerQueryData {
     public Player getPlayer() {
         return player;
     }
+
 }

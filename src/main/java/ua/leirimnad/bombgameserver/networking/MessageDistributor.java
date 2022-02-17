@@ -26,7 +26,7 @@ public class MessageDistributor {
         switch (action){
             case "GET_TABLE_LIST" -> {
                 if (instantQueryId == null) WebSocketServer.informBadRequest(session);
-                else this.server.tableManager.processGetTableList(session, instantQueryId);
+                else this.server.getTableManager().processGetTableList(session, instantQueryId);
             }
 
             case "CREATE_TABLE" -> {
@@ -37,7 +37,7 @@ public class MessageDistributor {
                     String tableName = (String) request.get("table_name");
                     String playerName = (String) request.get("player_name");
 
-                    this.server.tableManager.processCreateTable(session, instantQueryId, tableName, playerName);
+                    this.server.getTableManager().processCreateTable(session, instantQueryId, tableName, playerName);
                 }
             }
 
@@ -49,18 +49,19 @@ public class MessageDistributor {
                     String tableId = (String) request.get("table_id");
                     String playerName = (String) request.get("player_name");
 
-                    this.server.tableManager.processJoinTable(session, instantQueryId, tableId, playerName);
+                    this.server.getTableManager().processJoinTable(session, instantQueryId, tableId, playerName);
                 }
             }
 
             case "LEAVE_TABLE" -> {
-                if (instantQueryId == null){
-                    WebSocketServer.informBadRequest(session);
-                }
-                else{
-                    this.server.tableManager.processLeaveTable(session, instantQueryId);
-                }
+                if (instantQueryId == null) WebSocketServer.informBadRequest(session);
+                else this.server.getTableManager().processLeaveTable(session, instantQueryId);
             }
+
+            case "START_GAME" -> {
+                this.server.getTableManager().processStartGame(session, server.getWordManager());
+            }
+
         }
 
     }

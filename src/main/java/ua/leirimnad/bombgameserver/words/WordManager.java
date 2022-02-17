@@ -11,8 +11,20 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WordManager {
+    public static final char[] RUSSIAN_REQUIRED_LETTERS = requiredLetters();
+
     private final Set<String> words;
     private final Map<String, Float> syllables_2, syllables_3, syllables_4;
+
+    private static char[] requiredLetters(){
+        char[] letters = new char[32];
+        int i = 0;
+        for (char ch = 'а'; ch <= 'я'; ch++) {
+            letters[i] = ch;
+            i++;
+        }
+        return letters;
+    }
 
     public WordManager() {
 

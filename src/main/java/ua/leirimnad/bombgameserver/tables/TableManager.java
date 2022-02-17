@@ -13,6 +13,7 @@ import ua.leirimnad.bombgameserver.networking.server_queries.ServerQuery;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.*;
 import ua.leirimnad.bombgameserver.players.Player;
 import ua.leirimnad.bombgameserver.players.PlayerManager;
+import ua.leirimnad.bombgameserver.words.WordManager;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -92,6 +93,7 @@ public class TableManager {
         }
     }
 
+    // должен ли меняться слог, после того как вышел игрок?
     public void processLeaveTable(WebSocketSession session, String instantQueryId) throws IOException{
         Table table = playerManager.getTableBySession(session);
         if(table == null){
@@ -102,8 +104,8 @@ public class TableManager {
                                             .filter(p -> p.getSession().equals(session))
                                             .findFirst()
                                             .orElse(null);
-
             assert player != null;
+
             table.removePlayer(player);
             playerManager.processLeavePlayer(table, player);
 
@@ -116,6 +118,17 @@ public class TableManager {
             ObjectWriter objectWriter = objectMapper.writer();
             ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new LEAVE_TABLE_SUCCESS());
             session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
+        }
+    }
+
+    public void processStartGame(WebSocketSession session, WordManager wordManager) throws IOException{
+        Table table = playerManager.getTableBySession(session);
+
+        if(table.getHost().getSession().equals(session)){
+            String syllable = wordManager.getSyllable(0.25f);
+            table.start(syllable);
+
+            playerManager.processStartGame(table);
         }
     }
 
