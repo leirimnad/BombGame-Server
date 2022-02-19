@@ -1,8 +1,5 @@
 package ua.leirimnad.bombgameserver.words;
 
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
-
 import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -11,18 +8,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WordManager {
-    public static final List<Character> RUSSIAN_REQUIRED_LETTERS = requiredLetters();
-
     private final Set<String> words;
     private final Map<String, Float> syllables_2, syllables_3, syllables_4;
 
-    private static List<Character> requiredLetters(){
-        List<Character> letters = new ArrayList<>();
-        for (char ch = 'а'; ch <= 'я'; ch++) {
-            letters.add(ch);
-        }
-        return letters;
-    }
 
     public WordManager() {
 
@@ -114,7 +102,7 @@ public class WordManager {
         if (applicable.size() == 0) {
             System.out.println("! For some reason no applicable syllables found. Min complexity: "
                     +minComplexity+", max: "+maxComplexity+". Returning random syllable.");
-            return (String) syllables.entrySet().toArray()[new SecureRandom().nextInt(syllables.size())];
+            return (String) syllables.keySet().toArray()[new SecureRandom().nextInt(syllables.size())];
         }
 
         return applicable.get(new SecureRandom().nextInt(applicable.size())).toUpperCase(Locale.ROOT);

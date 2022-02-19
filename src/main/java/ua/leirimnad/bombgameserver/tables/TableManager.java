@@ -14,8 +14,10 @@ import ua.leirimnad.bombgameserver.words.WordManager;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class TableManager {
 
@@ -106,7 +108,7 @@ public class TableManager {
         if (table == null) throw new ProcessingException("No table found for this session");
 
         if(table.getHost().getSession().equals(session)){
-            String syllable = wordManager.getSyllable(0.25f);
+            String syllable = getNewSyllable(table, wordManager);
             table.start(syllable);
 
             playerManager.processStartGame(table);
@@ -128,27 +130,41 @@ public class TableManager {
         Table table = playerManager.getTableBySession(session);
         if (table == null) throw new ProcessingException("No table found for this session");
 
-        if (!table.getCurrentPlayer().getSession().equals(session))
+        Player currentPlayer = table.getCurrentPlayer();
+
+        if (!currentPlayer.getSession().equals(session))
             throw new ProcessingException("You are not the current player");
 
         if (!wordManager.matches(table.getCurrentWord(), table.getCurrentSyllable()))
             playerManager.processWordRejected(table);
         else {
-            float complexity = table.calculateSyllableComplexity();
-            SecureRandom random = new SecureRandom();
-            float minComplexity = complexity - random.nextFloat(Settings.COMPLEXITY_RANDOMNESS/2);
-            float maxComplexity = complexity + random.nextFloat(Settings.COMPLEXITY_RANDOMNESS/2);
+            String newSyllable = getNewSyllable(table, wordManager);
 
-            String newSyllable = wordManager.getSyllable(minComplexity, maxComplexity);
-
+            currentPlayer.fillCharacters(table.getCurrentWord());
+            if (currentPlayer.getNeededCharacters().isEmpty()){
+                currentPlayer.incrementLives();
+                currentPlayer.applyNeededCharacters(
+                        table.getRequiredLetters(currentPlayer.getCharacterSetGeneration())
+                );
+                playerManager.processLifeEarned(table, currentPlayer);
+            }
             table.passTurn();
             table.setCurrentSyllable(newSyllable);
-            // TODO: LIFE_EARNED
+            table.setCurrentWord("");
+
             playerManager.processWordAccepted(table, newSyllable,
                     wordManager.getComplexity(newSyllable), table.getCurrentPlayer());
         }
 
+    }
 
+    private String getNewSyllable(Table table, WordManager wordManager){
+        float complexity = table.calculateSyllableComplexity();
+        SecureRandom random = new SecureRandom();
+        float minComplexity = complexity - random.nextFloat(Settings.COMPLEXITY_RANDOMNESS/2);
+        float maxComplexity = complexity + random.nextFloat(Settings.COMPLEXITY_RANDOMNESS/2);
+
+        return wordManager.getSyllable(minComplexity, maxComplexity);
     }
 
     private String generateRandomId(int length){

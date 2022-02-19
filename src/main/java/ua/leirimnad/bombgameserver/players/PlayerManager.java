@@ -38,9 +38,14 @@ public class PlayerManager {
     }
 
     public void processStartGame(Table table) {
+        for (Player player : table.getPlayers()) {
+            player.applyNeededCharacters(table.getRequiredLetters(0));
+        }
+
         sendToAll(table,
-                new GAME_STARTED(table.getCurrentSyllable(), WordManager.RUSSIAN_REQUIRED_LETTERS, table.getCurrentPlayer())
+                new GAME_STARTED(table.getCurrentSyllable(), table.getRequiredLetters(0), table.getCurrentPlayer())
         );
+
     }
 
     public void processUpdateWord(Table table, Player origin_player) {
@@ -55,12 +60,20 @@ public class PlayerManager {
         sendToAll(table, new WORD_ACCEPTED(newSyllable, nextPlayer, complexity));
     }
 
+    public void processLifeEarned(Table table, Player currentPlayer) {
+        WebSocketServer.sendActionQuery(currentPlayer.getSession(),
+                new LIFE_EARNED(currentPlayer.getId(), currentPlayer.getNeededCharacters())
+        );
+        sendToAll(table, new LIFE_EARNED(currentPlayer.getId(), null), currentPlayer);
+    }
+
     private void sendToAll(Table table, ServerQueryData data, Player... exceptPlayers){
         for(Player p : table.getPlayers()){
             if(!Arrays.asList(exceptPlayers).contains(p))
                 WebSocketServer.sendActionQuery(p.getSession(), data);
         }
     }
+
 
 
 }

@@ -4,11 +4,21 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.Validate;
 import org.springframework.web.socket.WebSocketSession;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class Player {
     private final String id;
     private final String name;
     private int lives;
     private boolean isSpectating;
+
+    @JsonIgnore
+    private List<Character> neededCharacters;
+
+    @JsonIgnore
+    private int characterSetGeneration = 0;
 
     @JsonIgnore
     private final WebSocketSession session;
@@ -49,4 +59,28 @@ public class Player {
         return session;
     }
 
+    public List<Character> getNeededCharacters() {
+        return neededCharacters;
+    }
+
+    public void applyNeededCharacters(List<Character> neededCharacters) {
+        this.neededCharacters = neededCharacters;
+        this.characterSetGeneration++;
+    }
+
+    public int getCharacterSetGeneration() {
+        return characterSetGeneration;
+    }
+
+    public void fillCharacters(String str) {
+        List<Character> characters = str.chars().mapToObj(e -> (char)e).collect(Collectors.toList());
+        for (Character c: characters) {
+            neededCharacters.removeAll(Collections.singleton(Character.toLowerCase(c)));
+            neededCharacters.removeAll(Collections.singleton(Character.toUpperCase(c)));
+        }
+    }
+
+    public void incrementLives() {
+        this.lives++;
+    }
 }

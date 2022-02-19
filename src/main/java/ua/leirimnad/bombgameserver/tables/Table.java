@@ -6,7 +6,9 @@ import ua.leirimnad.bombgameserver.Settings;
 import ua.leirimnad.bombgameserver.players.Player;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Table {
 
@@ -22,6 +24,8 @@ public class Table {
     @JsonIgnore
     private int iter;
     private int playersIterated = 0;
+    private final List<List<Character>> requiredLettersSets = new ArrayList<>(){{add(generateRequiredLetters());}};
+
 
     public Table(String id, String name, Player host) {
         Validate.notNull(id, "table's id can't be null");
@@ -138,7 +142,11 @@ public class Table {
     }
 
     public float calculateSyllableComplexity() {
-        float rounds = (float) playersIterated / this.players.stream().filter((Player p)->!p.isSpectating()).count();
+        float playersPlaying = this.players.stream().filter((Player p)->!p.isSpectating()).count();
+        if (!this.isGameInProgress())
+            playersPlaying = players.size();
+
+        float rounds = (float) playersIterated / playersPlaying;
         float sigmoidMultiplier = (float) (-Math.log(0.0001)/Settings.ROUNDS_TO_HARDEST_SYLLABLE);
         return sigmoid(rounds, sigmoidMultiplier);
     }
@@ -146,4 +154,18 @@ public class Table {
     private static float sigmoid(double x, float xMultiplier){
         return (float) (1 / (1 + Math.exp(-x * xMultiplier + Math.log(99))));
     }
+
+    private static List<Character> generateRequiredLetters(){
+        List<Character> letters  = "абвгдежзийклмнопрстуфхцчшщыьюя".chars().mapToObj(e -> (char)e).collect(Collectors.toList());
+        Collections.shuffle(letters);
+        return letters.subList(0, Settings.REQUIRED_LETTERS_COUNT);
+    }
+
+    public List<Character> getRequiredLetters(int gen){
+        while(requiredLettersSets.size() <= gen){
+            requiredLettersSets.add(generateRequiredLetters());
+        }
+        return requiredLettersSets.get(gen);
+    }
+
 }
