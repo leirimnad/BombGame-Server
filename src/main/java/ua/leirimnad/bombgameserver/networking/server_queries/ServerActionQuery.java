@@ -1,5 +1,6 @@
 package ua.leirimnad.bombgameserver.networking.server_queries;
 
+// Usual response
 public class ServerActionQuery extends ServerQuery {
     public String action;
 
