@@ -1,7 +1,11 @@
 package ua.leirimnad.bombgameserver.networking.server_queries;
 
-// Like usual response but with special id
+/**
+ * A response for an instant query. Has a special id for answering the query.
+ */
+
 public class ServerInstantQueryResponse extends ServerActionQuery {
+
     public String request_id;
 
     public ServerInstantQueryResponse(String instantQueryId, ServerQueryData data) {

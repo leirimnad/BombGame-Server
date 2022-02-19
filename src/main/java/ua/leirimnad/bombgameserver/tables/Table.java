@@ -1,6 +1,7 @@
 package ua.leirimnad.bombgameserver.tables;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.commons.lang3.Validate;
 import ua.leirimnad.bombgameserver.players.Player;
 
 import java.util.ArrayList;
@@ -21,8 +22,13 @@ public class Table {
     private int iter;
 
     public Table(String id, String name, Player host) {
+        Validate.notNull(id, "table's id can't be null");
         this.id = id;
+
+        Validate.notNull(name, "table's name can't be null");
         this.name = name;
+
+        Validate.notNull(host, "table's host can't be null");
         this.host = host;
         this.players = new ArrayList<>();
         this.iter = 0;

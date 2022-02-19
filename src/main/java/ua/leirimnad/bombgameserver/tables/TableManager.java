@@ -1,23 +1,18 @@
 package ua.leirimnad.bombgameserver.tables;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import ua.leirimnad.bombgameserver.networking.WebSocketServer;
-import ua.leirimnad.bombgameserver.networking.server_queries.ServerInstantQueryResponse;
-import ua.leirimnad.bombgameserver.networking.server_queries.ServerQuery;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.*;
 import ua.leirimnad.bombgameserver.players.Player;
 import ua.leirimnad.bombgameserver.players.PlayerManager;
 import ua.leirimnad.bombgameserver.words.WordManager;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 public class TableManager {
 
@@ -30,24 +25,23 @@ public class TableManager {
         this.playerManager = playerManager;
     }
 
-    public void processGetTableList(WebSocketSession session, String instantQueryId) throws IOException {
-        ObjectWriter objectWriter = new ObjectMapper().writer();
-        ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new TABLE_LIST(tables));
-        session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
+    public void processGetTableList(WebSocketSession session, String instantQueryId) {
+        WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new TABLE_LIST(tables));
     }
 
     public void processCreateTable(WebSocketSession session, String instantQueryId,
-                                   String tableName, String playerName) throws IOException {
+                                   String tableName, String playerName) {
         if(playerManager.hasSession(session)){
-            ObjectWriter objectWriter = new ObjectMapper().writer();
-            ServerQuery response = new ServerInstantQueryResponse(
+            WebSocketServer.sendInstantQueryResponse(
+                    session,
                     instantQueryId,
-                    new CREATE_TABLE_FAILURE("The player " + session.getId() +
-                            " cannot create a table because he is already playing at another table")
+                    new QUERY_FAILURE("The player " + session.getId() +
+                    " cannot create a table because he is already playing at another table")
             );
-            session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
         }
         else {
+
+
             Player host = new Player(session, playerName);
 
             String tableId = generateRandomId(ID_LENGTH);
@@ -56,23 +50,19 @@ public class TableManager {
             tables.add(table);
             playerManager.processJoinPlayer(table, host);
 
-            ObjectWriter objectWriter = new ObjectMapper().writer();
-            ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new CREATE_TABLE_SUCCESS(table));
-            session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
+            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new CREATE_TABLE_SUCCESS(table));
         }
     }
 
 
     public void processJoinTable(WebSocketSession session, String instantQueryId,
-                                 String tableId, String playerName) throws IOException {
+                                 String tableId, String playerName) {
         if(!idExists(tableId) || playerManager.hasSession(session)){
-            ObjectWriter objectWriter = new ObjectMapper().writer();
-            ServerQuery response = new ServerInstantQueryResponse(
+            WebSocketServer.sendInstantQueryResponse(
+                    session,
                     instantQueryId,
-                    new JOIN_TABLE_FAILURE("The player " + session.getId() +
-                            " cannot join the table " + tableId)
+                    new QUERY_FAILURE("The player " + session.getId() + " cannot join the table " + tableId)
             );
-            session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
         }
         else{
             Player player = new Player(session, playerName);
@@ -87,42 +77,41 @@ public class TableManager {
 
             playerManager.processJoinPlayer(table, player);
 
-            ObjectWriter objectWriter = new ObjectMapper().writer();
-            ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new JOIN_TABLE_SUCCESS(table));
-            session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
+
+            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new JOIN_TABLE_SUCCESS(table));
         }
     }
 
     // должен ли меняться слог, после того как вышел игрок?
-    public void processLeaveTable(WebSocketSession session, String instantQueryId) throws IOException{
+    public void processLeaveTable(WebSocketSession session, String instantQueryId) {
         Table table = playerManager.getTableBySession(session);
-        if(table == null){
-            WebSocketServer.informBadRequest(session);
+        if(table == null) {
+            WebSocketServer.sendActionQuery(session, new QUERY_FAILURE("No table found for this session"));
+            return;
         }
-        else {
-            Player player = table.getPlayers().stream()
-                                            .filter(p -> p.getSession().equals(session))
-                                            .findFirst()
-                                            .orElse(null);
-            assert player != null;
 
-            table.removePlayer(player);
-            playerManager.processLeavePlayer(table, player);
+        Player player = table.getPlayers().stream()
+                                        .filter(p -> p.getSession().equals(session))
+                                        .findFirst()
+                                        .orElse(null);
+        assert player != null;
 
-            if(table.getPlayers().isEmpty())
-                tables.remove(table);
+        table.removePlayer(player);
+        playerManager.processLeavePlayer(table, player);
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        if(table.getPlayers().isEmpty())
+            tables.remove(table);
 
-            ObjectWriter objectWriter = objectMapper.writer();
-            ServerQuery response = new ServerInstantQueryResponse(instantQueryId, new LEAVE_TABLE_SUCCESS());
-            session.sendMessage(new TextMessage(objectWriter.writeValueAsString(response)));
-        }
+        WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new LEAVE_TABLE_SUCCESS());
+
     }
 
-    public void processStartGame(WebSocketSession session, WordManager wordManager) throws IOException{
+    public void processStartGame(WebSocketSession session, WordManager wordManager) {
         Table table = playerManager.getTableBySession(session);
+        if (table == null) {
+            WebSocketServer.sendActionQuery(session, new QUERY_FAILURE("No table found for this session"));
+            return;
+        }
 
         if(table.getHost().getSession().equals(session)){
             String syllable = wordManager.getSyllable(0.25f);

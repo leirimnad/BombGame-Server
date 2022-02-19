@@ -1,66 +1,59 @@
 package ua.leirimnad.bombgameserver.networking;
 
 import org.json.simple.JSONObject;
-import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import ua.leirimnad.bombgameserver.BombGameServer;
+import ua.leirimnad.bombgameserver.networking.server_queries.data.QUERY_FAILURE;
 
-import java.io.IOException;
-import java.util.Objects;
+import java.util.List;
+import java.util.Optional;
 
 // TODO что такое instantQueryId
 public class MessageDistributor {
     private final BombGameServer server;
+    private final List<String> instantQueryActions = List.of(
+            "GET_TABLE_LIST", "CREATE_TABLE", "JOIN_TABLE", "LEAVE_TABLE", "PING"
+            );
 
     public MessageDistributor(BombGameServer server) {
         this.server = server;
     }
 
-    public void process(JSONObject request, WebSocketSession session) throws IOException {
+    public void process(JSONObject request, WebSocketSession session) throws ProcessingException {
 
         String action = getAction(request);
         String instantQueryId = getInstantQueryId(request);
 
-        // action == null --> проверяется в WebSocketServer
+        if (instantQueryActions.contains(action) && instantQueryId == null){
+            WebSocketServer.sendActionQuery(session, new QUERY_FAILURE(action+" query requires an instant query id"));
+            return;
+        }
 
         switch (action){
-            case "GET_TABLE_LIST" -> {
-                if (instantQueryId == null) WebSocketServer.informBadRequest(session);
-                else this.server.getTableManager().processGetTableList(session, instantQueryId);
-            }
+            case "GET_TABLE_LIST" -> this.server.getTableManager().processGetTableList(session, instantQueryId);
 
             case "CREATE_TABLE" -> {
-                if (instantQueryId == null){
-                    WebSocketServer.informBadRequest(session);
-                }
-                else {
-                    String tableName = (String) request.get("table_name");
-                    String playerName = (String) request.get("player_name");
+                String tableName = (String) Optional.ofNullable(request.get("table_name"))
+                        .orElseThrow(() -> new ProcessingException("table_name not found"));
 
-                    this.server.getTableManager().processCreateTable(session, instantQueryId, tableName, playerName);
-                }
+                String playerName = (String) Optional.ofNullable(request.get("player_name"))
+                        .orElseThrow(() -> new ProcessingException("player_name not found"));
+
+                this.server.getTableManager().processCreateTable(session, instantQueryId, tableName, playerName);
             }
 
             case "JOIN_TABLE" -> {
-                if (instantQueryId == null){
-                    WebSocketServer.informBadRequest(session);
-                }
-                else{
-                    String tableId = (String) request.get("table_id");
-                    String playerName = (String) request.get("player_name");
+                String tableId = (String) Optional.ofNullable(request.get("table_id"))
+                        .orElseThrow(() -> new ProcessingException("table_id not found"));
+                String playerName = (String) Optional.ofNullable(request.get("player_name"))
+                        .orElseThrow(() -> new ProcessingException("player_name not found"));
 
-                    this.server.getTableManager().processJoinTable(session, instantQueryId, tableId, playerName);
-                }
+                this.server.getTableManager().processJoinTable(session, instantQueryId, tableId, playerName);
             }
 
-            case "LEAVE_TABLE" -> {
-                if (instantQueryId == null) WebSocketServer.informBadRequest(session);
-                else this.server.getTableManager().processLeaveTable(session, instantQueryId);
-            }
+            case "LEAVE_TABLE" -> this.server.getTableManager().processLeaveTable(session, instantQueryId);
 
-            case "START_GAME" -> {
-                this.server.getTableManager().processStartGame(session, server.getWordManager());
-            }
+            case "START_GAME" -> this.server.getTableManager().processStartGame(session, server.getWordManager());
 
         }
 

@@ -1,6 +1,7 @@
 package ua.leirimnad.bombgameserver.players;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.commons.lang3.Validate;
 import org.springframework.web.socket.WebSocketSession;
 
 public class Player {
@@ -13,7 +14,10 @@ public class Player {
     private final WebSocketSession session;
 
     public Player(WebSocketSession session, String name){
+        Validate.notNull(name, "player's session can't be null");
         this.id = session.getId();
+
+        Validate.notNull(name, "player's name can't be null");
         this.name = name;
         this.lives = 3;
         this.isSpectating = true;
