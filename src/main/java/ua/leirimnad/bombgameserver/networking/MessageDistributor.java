@@ -63,6 +63,8 @@ public class MessageDistributor {
                 this.server.getTableManager().processUpdateWord(session, updatedWord);
             }
 
+            case "CONFIRM_WORD" -> this.server.getTableManager().processConfirmWord(session, server.getWordManager());
+
             case "PING" -> WebSocketServer.sendActionQuery(session, new PONG());
         }
 

@@ -2,6 +2,7 @@ package ua.leirimnad.bombgameserver.tables;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.Validate;
+import ua.leirimnad.bombgameserver.Settings;
 import ua.leirimnad.bombgameserver.players.Player;
 
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ public class Table {
 
     @JsonIgnore
     private int iter;
+    private int playersIterated = 0;
 
     public Table(String id, String name, Player host) {
         Validate.notNull(id, "table's id can't be null");
@@ -76,6 +78,9 @@ public class Table {
         return currentSyllable;
     }
 
+    public void setCurrentSyllable(String currentSyllable) {
+        this.currentSyllable = currentSyllable;
+    }
 
     public void addPlayer(Player player){
         players.add(player);
@@ -94,12 +99,7 @@ public class Table {
 
         if(gameInProgress && !players.isEmpty() && currentPlayer.equals(player)){
             currentWord = null;
-
-            do{
-                nextIteration();
-            }
-            while(players.get(iter).isSpectating());
-            currentPlayer = players.get(iter);
+            passTurn();
         }
     }
 
@@ -116,8 +116,34 @@ public class Table {
         return true;
     }
 
-    private void nextIteration(){
-        iter++;
-        iter %= players.size();
+    public void passTurn(){
+        currentPlayer = getNextAlivePlayer();
+    }
+
+    private Player getNextAlivePlayer(){
+        do{
+            iter++;
+            iter %= players.size();
+
+            if(players.get(iter).isSpectating()){
+                continue;
+            }
+            else if (players.get(iter).getLives() <= 0) {
+                playersIterated++;
+            } else break;
+
+        } while(true);
+        playersIterated++;
+        return players.get(iter);
+    }
+
+    public float calculateSyllableComplexity() {
+        float rounds = (float) playersIterated / this.players.stream().filter((Player p)->!p.isSpectating()).count();
+        float sigmoidMultiplier = (float) (-Math.log(0.0001)/Settings.ROUNDS_TO_HARDEST_SYLLABLE);
+        return sigmoid(rounds, sigmoidMultiplier);
+    }
+
+    private static float sigmoid(double x, float xMultiplier){
+        return (float) (1 / (1 + Math.exp(-x * xMultiplier + Math.log(99))));
     }
 }

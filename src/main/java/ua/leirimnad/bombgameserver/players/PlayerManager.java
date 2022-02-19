@@ -3,13 +3,11 @@ package ua.leirimnad.bombgameserver.players;
 import org.springframework.web.socket.WebSocketSession;
 import ua.leirimnad.bombgameserver.networking.WebSocketServer;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerQueryData;
-import ua.leirimnad.bombgameserver.networking.server_queries.data.GAME_STARTED;
-import ua.leirimnad.bombgameserver.networking.server_queries.data.PLAYER_JOINED;
-import ua.leirimnad.bombgameserver.networking.server_queries.data.PLAYER_LEFT;
-import ua.leirimnad.bombgameserver.networking.server_queries.data.WORD_UPDATED;
+import ua.leirimnad.bombgameserver.networking.server_queries.data.*;
 import ua.leirimnad.bombgameserver.tables.Table;
 import ua.leirimnad.bombgameserver.words.WordManager;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,56 +29,37 @@ public class PlayerManager {
 
     public void processJoinPlayer(Table table, Player player) {
         tableMap.put(player.getSession(), table);
-        sendJoinNotification(table, player);
+        sendToAll(table, new PLAYER_JOINED(player), player);
     }
 
-    public void processLeavePlayer(Table table, Player player) {
+    public void processLeavePlayer(Table table, Player player, Player nextPlayer) {
         tableMap.remove(player.getSession());
-        sendLeaveNotification(table, player);
+        sendToAll(table, new PLAYER_LEFT(player, nextPlayer), player);
     }
 
     public void processStartGame(Table table) {
-        sendStartNotification(table);
+        sendToAll(table,
+                new GAME_STARTED(table.getCurrentSyllable(), WordManager.RUSSIAN_REQUIRED_LETTERS, table.getCurrentPlayer())
+        );
     }
 
     public void processUpdateWord(Table table, Player origin_player) {
-        sendWordUpdatedNotification(table, origin_player);
+        sendToAll(table, new WORD_UPDATED(table.getCurrentWord()), origin_player);
     }
 
-    private void sendWordUpdatedNotification(Table table, Player origin_player) {
-        ServerQueryData response = new WORD_UPDATED(table.getCurrentWord());
+    public void processWordRejected(Table table) {
+        sendToAll(table, new WORD_REJECTED());
+    }
 
+    public void processWordAccepted(Table table, String newSyllable, float complexity, Player nextPlayer) {
+        sendToAll(table, new WORD_ACCEPTED(newSyllable, nextPlayer, complexity));
+    }
+
+    private void sendToAll(Table table, ServerQueryData data, Player... exceptPlayers){
         for(Player p : table.getPlayers()){
-            if(!p.equals(origin_player))
-                WebSocketServer.sendActionQuery(p.getSession(), response);
+            if(!Arrays.asList(exceptPlayers).contains(p))
+                WebSocketServer.sendActionQuery(p.getSession(), data);
         }
-    }
-
-    private void sendJoinNotification(Table table, Player player) {
-        ServerQueryData response = new PLAYER_JOINED(player);
-
-        for(Player p : table.getPlayers()){
-            if(!p.equals(player))
-                WebSocketServer.sendActionQuery(p.getSession(), response);
-        }
-    }
-
-    private void sendLeaveNotification(Table table, Player player) {
-        ServerQueryData response = new PLAYER_LEFT(player);
-
-        for(Player p : table.getPlayers()){
-            if(!p.equals(player))
-                WebSocketServer.sendActionQuery(p.getSession(), response);
-        }
-    }
-
-    private void sendStartNotification(Table table) {
-        String syllable = table.getCurrentSyllable();
-        ServerQueryData response = new GAME_STARTED(syllable, WordManager.RUSSIAN_REQUIRED_LETTERS);
-
-        for(Player p : table.getPlayers())
-            WebSocketServer.sendActionQuery(p.getSession(), response);
-
     }
 
 

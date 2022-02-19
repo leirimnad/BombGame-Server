@@ -11,17 +11,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WordManager {
-    public static final char[] RUSSIAN_REQUIRED_LETTERS = requiredLetters();
+    public static final List<Character> RUSSIAN_REQUIRED_LETTERS = requiredLetters();
 
     private final Set<String> words;
     private final Map<String, Float> syllables_2, syllables_3, syllables_4;
 
-    private static char[] requiredLetters(){
-        char[] letters = new char[32];
-        int i = 0;
+    private static List<Character> requiredLetters(){
+        List<Character> letters = new ArrayList<>();
         for (char ch = 'а'; ch <= 'я'; ch++) {
-            letters[i] = ch;
-            i++;
+            letters.add(ch);
         }
         return letters;
     }
@@ -96,7 +94,8 @@ public class WordManager {
     }
 
     public boolean matches(String word, String syllable){
-        return word.contains(syllable) & words.contains(word);
+        return word.toUpperCase(Locale.ROOT).contains(syllable.toUpperCase(Locale.ROOT))
+                        && words.contains(word.toLowerCase(Locale.ROOT));
     }
 
     public String getSyllable(int len, float minComplexity, float maxComplexity){
@@ -111,7 +110,14 @@ public class WordManager {
                 .filter(entry -> (entry.getValue() >= minComplexity && entry.getValue() <= maxComplexity))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
-        return applicable.get(new SecureRandom().nextInt(applicable.size()));
+
+        if (applicable.size() == 0) {
+            System.out.println("! For some reason no applicable syllables found. Min complexity: "
+                    +minComplexity+", max: "+maxComplexity+". Returning random syllable.");
+            return (String) syllables.entrySet().toArray()[new SecureRandom().nextInt(syllables.size())];
+        }
+
+        return applicable.get(new SecureRandom().nextInt(applicable.size())).toUpperCase(Locale.ROOT);
     }
 
     public String getSyllable(float minComplexity, float maxComplexity){
@@ -128,12 +134,14 @@ public class WordManager {
         return this.getSyllable(0, maxComplexity);
     }
 
-    public void processGetSyllable(WebSocketSession session, float minComplexity, float maxComplexity) {
-        // this is a testing-only method and should be deleted
-        try {
-            session.sendMessage(new TextMessage(getSyllable(minComplexity, maxComplexity)));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public float getComplexity(String syllable){
+        syllable = syllable.toLowerCase(Locale.ROOT);
+        if (syllable.length() == 2)
+            return Optional.ofNullable(syllables_2.get(syllable)).orElse(-1.0f);
+        if (syllable.length() == 3)
+            return Optional.ofNullable(syllables_3.get(syllable)).orElse(-1.0f);
+        if (syllable.length() == 4)
+            return Optional.ofNullable(syllables_4.get(syllable)).orElse(-1.0f);
+        return -1.0f;
     }
 }

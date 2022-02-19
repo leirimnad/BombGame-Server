@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.web.socket.WebSocketSession;
+import ua.leirimnad.bombgameserver.Settings;
 import ua.leirimnad.bombgameserver.networking.ProcessingException;
 import ua.leirimnad.bombgameserver.networking.WebSocketServer;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.*;
@@ -11,6 +12,7 @@ import ua.leirimnad.bombgameserver.players.Player;
 import ua.leirimnad.bombgameserver.players.PlayerManager;
 import ua.leirimnad.bombgameserver.words.WordManager;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -82,8 +84,15 @@ public class TableManager {
                                         .orElse(null);
         assert player != null;
 
+        boolean isCurrent = table.getCurrentPlayer().equals(player);
+
         table.removePlayer(player);
-        playerManager.processLeavePlayer(table, player);
+
+        Player nextPlayer = null;
+        if (isCurrent && table.isGameInProgress())
+            nextPlayer = table.getCurrentPlayer();
+
+        playerManager.processLeavePlayer(table, player, nextPlayer);
 
         if(table.getPlayers().isEmpty())
             tables.remove(table);
@@ -115,6 +124,33 @@ public class TableManager {
         playerManager.processUpdateWord(table, table.getCurrentPlayer());
     }
 
+    public void processConfirmWord(WebSocketSession session, WordManager wordManager) throws ProcessingException {
+        Table table = playerManager.getTableBySession(session);
+        if (table == null) throw new ProcessingException("No table found for this session");
+
+        if (!table.getCurrentPlayer().getSession().equals(session))
+            throw new ProcessingException("You are not the current player");
+
+        if (!wordManager.matches(table.getCurrentWord(), table.getCurrentSyllable()))
+            playerManager.processWordRejected(table);
+        else {
+            float complexity = table.calculateSyllableComplexity();
+            SecureRandom random = new SecureRandom();
+            float minComplexity = complexity - random.nextFloat(Settings.COMPLEXITY_RANDOMNESS/2);
+            float maxComplexity = complexity + random.nextFloat(Settings.COMPLEXITY_RANDOMNESS/2);
+
+            String newSyllable = wordManager.getSyllable(minComplexity, maxComplexity);
+
+            table.passTurn();
+            table.setCurrentSyllable(newSyllable);
+            // TODO: LIFE_EARNED
+            playerManager.processWordAccepted(table, newSyllable,
+                    wordManager.getComplexity(newSyllable), table.getCurrentPlayer());
+        }
+
+
+    }
+
     private String generateRandomId(int length){
         String id;
         do{
@@ -130,6 +166,7 @@ public class TableManager {
                 .stream()
                 .anyMatch(t -> t.getId().equals(id));
     }
+
 
 
 }
