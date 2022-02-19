@@ -68,6 +68,10 @@ public class Table {
         return currentWord;
     }
 
+    public void setCurrentWord(String currentWord) {
+        this.currentWord = currentWord;
+    }
+
     public String getCurrentSyllable() {
         return currentSyllable;
     }

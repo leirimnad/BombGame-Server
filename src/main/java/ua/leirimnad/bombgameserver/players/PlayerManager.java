@@ -6,6 +6,7 @@ import ua.leirimnad.bombgameserver.networking.server_queries.ServerQueryData;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.GAME_STARTED;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.PLAYER_JOINED;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.PLAYER_LEFT;
+import ua.leirimnad.bombgameserver.networking.server_queries.data.WORD_UPDATED;
 import ua.leirimnad.bombgameserver.tables.Table;
 import ua.leirimnad.bombgameserver.words.WordManager;
 
@@ -42,6 +43,19 @@ public class PlayerManager {
         sendStartNotification(table);
     }
 
+    public void processUpdateWord(Table table, Player origin_player) {
+        sendWordUpdatedNotification(table, origin_player);
+    }
+
+    private void sendWordUpdatedNotification(Table table, Player origin_player) {
+        ServerQueryData response = new WORD_UPDATED(table.getCurrentWord());
+
+        for(Player p : table.getPlayers()){
+            if(!p.equals(origin_player))
+                WebSocketServer.sendActionQuery(p.getSession(), response);
+        }
+    }
+
     private void sendJoinNotification(Table table, Player player) {
         ServerQueryData response = new PLAYER_JOINED(player);
 
@@ -68,6 +82,7 @@ public class PlayerManager {
             WebSocketServer.sendActionQuery(p.getSession(), response);
 
     }
+
 
 }
 

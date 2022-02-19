@@ -3,6 +3,7 @@ package ua.leirimnad.bombgameserver.networking;
 import org.json.simple.JSONObject;
 import org.springframework.web.socket.WebSocketSession;
 import ua.leirimnad.bombgameserver.BombGameServer;
+import ua.leirimnad.bombgameserver.networking.server_queries.data.PONG;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.QUERY_FAILURE;
 
 import java.util.List;
@@ -55,6 +56,14 @@ public class MessageDistributor {
 
             case "START_GAME" -> this.server.getTableManager().processStartGame(session, server.getWordManager());
 
+            case "UPDATE_WORD"  -> {
+                String updatedWord = (String) Optional.ofNullable(request.get("updated_word"))
+                        .orElseThrow(() -> new ProcessingException("updated_word not found"));
+
+                this.server.getTableManager().processUpdateWord(session, updatedWord);
+            }
+
+            case "PING" -> WebSocketServer.sendActionQuery(session, new PONG());
         }
 
     }
@@ -63,8 +72,9 @@ public class MessageDistributor {
         return (String) request.get("request_id");
     }
 
-    private static String getAction(JSONObject request){
-        return (String) request.get("action");
+    private static String getAction(JSONObject request) throws ProcessingException {
+        return (String) Optional.ofNullable(request.get("action"))
+                .orElseThrow(() -> new ProcessingException("action not found"));
     }
 
 

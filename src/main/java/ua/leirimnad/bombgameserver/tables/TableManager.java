@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.web.socket.WebSocketSession;
+import ua.leirimnad.bombgameserver.networking.ProcessingException;
 import ua.leirimnad.bombgameserver.networking.WebSocketServer;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.*;
 import ua.leirimnad.bombgameserver.players.Player;
@@ -30,65 +31,50 @@ public class TableManager {
     }
 
     public void processCreateTable(WebSocketSession session, String instantQueryId,
-                                   String tableName, String playerName) {
-        if(playerManager.hasSession(session)){
-            WebSocketServer.sendInstantQueryResponse(
-                    session,
-                    instantQueryId,
-                    new QUERY_FAILURE("The player " + session.getId() +
-                    " cannot create a table because he is already playing at another table")
-            );
-        }
-        else {
+                                   String tableName, String playerName) throws ProcessingException {
+        if(playerManager.hasSession(session))
+            throw new ProcessingException("The player " + session.getId() +
+                    " cannot create a table because he is already playing at another table");
 
+        Player host = new Player(session, playerName);
+        String tableId = generateRandomId(ID_LENGTH);
+        Table table = new Table(tableId, tableName, host);
 
-            Player host = new Player(session, playerName);
+        tables.add(table);
+        playerManager.processJoinPlayer(table, host);
 
-            String tableId = generateRandomId(ID_LENGTH);
-            Table table = new Table(tableId, tableName, host);
+        WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new CREATE_TABLE_SUCCESS(table));
 
-            tables.add(table);
-            playerManager.processJoinPlayer(table, host);
-
-            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new CREATE_TABLE_SUCCESS(table));
-        }
     }
 
 
     public void processJoinTable(WebSocketSession session, String instantQueryId,
-                                 String tableId, String playerName) {
-        if(!idExists(tableId) || playerManager.hasSession(session)){
-            WebSocketServer.sendInstantQueryResponse(
-                    session,
-                    instantQueryId,
-                    new QUERY_FAILURE("The player " + session.getId() + " cannot join the table " + tableId)
-            );
-        }
-        else{
-            Player player = new Player(session, playerName);
+                                 String tableId, String playerName) throws ProcessingException {
+        if (!idExists(tableId))
+            throw new ProcessingException("ID " + tableId + " does not exist");
+        if (playerManager.hasSession(session))
+            throw new ProcessingException("Player is already playing on another table");
 
-            Table table = tables.stream()
-                                .filter(t -> t.getId().equals(tableId))
-                                .findFirst()
-                                .orElse(null);
+        Player player = new Player(session, playerName);
 
-            assert table != null;
-            table.addPlayer(player);
+        Table table = tables.stream()
+                            .filter(t -> t.getId().equals(tableId))
+                            .findFirst()
+                            .orElse(null);
 
-            playerManager.processJoinPlayer(table, player);
+        assert table != null;
+        table.addPlayer(player);
 
+        playerManager.processJoinPlayer(table, player);
 
-            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new JOIN_TABLE_SUCCESS(table));
-        }
+        WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new JOIN_TABLE_SUCCESS(table));
+
     }
 
     // должен ли меняться слог, после того как вышел игрок?
-    public void processLeaveTable(WebSocketSession session, String instantQueryId) {
+    public void processLeaveTable(WebSocketSession session, String instantQueryId) throws ProcessingException {
         Table table = playerManager.getTableBySession(session);
-        if(table == null) {
-            WebSocketServer.sendActionQuery(session, new QUERY_FAILURE("No table found for this session"));
-            return;
-        }
+        if (table == null) throw new ProcessingException("No table found for this session");
 
         Player player = table.getPlayers().stream()
                                         .filter(p -> p.getSession().equals(session))
@@ -106,12 +92,9 @@ public class TableManager {
 
     }
 
-    public void processStartGame(WebSocketSession session, WordManager wordManager) {
+    public void processStartGame(WebSocketSession session, WordManager wordManager) throws ProcessingException {
         Table table = playerManager.getTableBySession(session);
-        if (table == null) {
-            WebSocketServer.sendActionQuery(session, new QUERY_FAILURE("No table found for this session"));
-            return;
-        }
+        if (table == null) throw new ProcessingException("No table found for this session");
 
         if(table.getHost().getSession().equals(session)){
             String syllable = wordManager.getSyllable(0.25f);
@@ -119,6 +102,17 @@ public class TableManager {
 
             playerManager.processStartGame(table);
         }
+    }
+
+    public void processUpdateWord(WebSocketSession session, String updatedWord) throws ProcessingException {
+        Table table = playerManager.getTableBySession(session);
+        if (table == null) throw new ProcessingException("No table found for this session");
+
+        if (!table.getCurrentPlayer().getSession().equals(session))
+            throw new ProcessingException("You are not the current player");
+
+        table.setCurrentWord(updatedWord.toUpperCase(Locale.ROOT));
+        playerManager.processUpdateWord(table, table.getCurrentPlayer());
     }
 
     private String generateRandomId(int length){
@@ -136,5 +130,6 @@ public class TableManager {
                 .stream()
                 .anyMatch(t -> t.getId().equals(id));
     }
+
 
 }
