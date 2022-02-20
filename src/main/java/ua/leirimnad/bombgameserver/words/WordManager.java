@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 public class WordManager {
     private final Set<String> words;
+    private final Map<String, Float> popular_words;
     private final Map<String, Float> syllables_2, syllables_3, syllables_4;
 
 
@@ -49,13 +50,16 @@ public class WordManager {
         syllables_2 = new TreeMap<>();
         syllables_3 = new TreeMap<>();
         syllables_4 = new TreeMap<>();
-        parseSyllables(syllables_2, "syllables_2_perc.txt");
-        parseSyllables(syllables_3, "syllables_3_perc.txt");
-        parseSyllables(syllables_4, "syllables_4_perc.txt");
+        parseStringFloatFile(syllables_2, "syllables_2_perc.txt");
+        parseStringFloatFile(syllables_3, "syllables_3_perc.txt");
+        parseStringFloatFile(syllables_4, "syllables_4_perc.txt");
+
+        popular_words = new TreeMap<>();
+        parseStringFloatFile(popular_words, "popular_words.txt");
 
     }
 
-    private void parseSyllables(Map<String, Float> map, String filename){
+    private void parseStringFloatFile(Map<String, Float> map, String filename){
         try {
             InputStream is = getClass().getClassLoader().getResourceAsStream(filename);
             if (is == null)
@@ -131,5 +135,24 @@ public class WordManager {
         if (syllable.length() == 4)
             return Optional.ofNullable(syllables_4.get(syllable)).orElse(-1.0f);
         return -1.0f;
+    }
+
+    public String getPossibleWord(String syllable){
+        List<Map.Entry<String, Float>> applicable = popular_words.entrySet().stream().filter((entry) ->
+                entry.getKey().toLowerCase(Locale.ROOT)
+                        .contains(syllable.toLowerCase(Locale.ROOT))
+        ).sorted((e1, e2) -> (int) Math.signum(e1.getValue() - e2.getValue())).toList();
+
+        for (int i = 1; i < applicable.size(); i++) {
+            applicable.get(i).setValue(applicable.get(i).getValue()+applicable.get(i).getValue());
+        }
+
+        float total_weight = applicable.get(applicable.size()-1).getValue();
+        float random_weight = new SecureRandom().nextFloat(total_weight);
+        return applicable.stream()
+                .filter(e->e.getValue() >= random_weight)
+                .findFirst()
+                .orElse(new AbstractMap.SimpleEntry<>("None", 0.0f))
+                .getKey();
     }
 }

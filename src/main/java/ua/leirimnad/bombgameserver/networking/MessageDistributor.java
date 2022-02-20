@@ -54,7 +54,7 @@ public class MessageDistributor {
 
             case "LEAVE_TABLE" -> this.server.getTableManager().processLeaveTable(session, instantQueryId);
 
-            case "START_GAME" -> this.server.getTableManager().processStartGame(session, server.getWordManager());
+            case "START_GAME" -> this.server.getTableManager().processStartGame(session);
 
             case "UPDATE_WORD"  -> {
                 String updatedWord = (String) Optional.ofNullable(request.get("updated_word"))
@@ -63,7 +63,7 @@ public class MessageDistributor {
                 this.server.getTableManager().processUpdateWord(session, updatedWord);
             }
 
-            case "CONFIRM_WORD" -> this.server.getTableManager().processConfirmWord(session, server.getWordManager());
+            case "CONFIRM_WORD" -> this.server.getTableManager().processConfirmWord(session);
 
             case "PING" -> WebSocketServer.sendActionQuery(session, new PONG());
         }

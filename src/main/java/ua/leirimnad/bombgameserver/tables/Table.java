@@ -5,9 +5,11 @@ import org.apache.commons.lang3.Validate;
 import ua.leirimnad.bombgameserver.Settings;
 import ua.leirimnad.bombgameserver.players.Player;
 
+import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Timer;
 import java.util.stream.Collectors;
 
 public class Table {
@@ -23,8 +25,19 @@ public class Table {
 
     @JsonIgnore
     private int iter;
+
+    @JsonIgnore
     private int playersIterated = 0;
+
+    @JsonIgnore
+    private int turnNumber = 0;
+
+    @JsonIgnore
+    private int currentSyllableDuration = 0;
+
+    @JsonIgnore
     private final List<List<Character>> requiredLettersSets = new ArrayList<>(){{add(generateRequiredLetters());}};
+    private Timer timer = null;
 
 
     public Table(String id, String name, Player host) {
@@ -78,7 +91,7 @@ public class Table {
         this.currentWord = currentWord;
     }
 
-    public String getCurrentSyllable() {
+    public synchronized String getCurrentSyllable() {
         return currentSyllable;
     }
 
@@ -107,20 +120,41 @@ public class Table {
         }
     }
 
-    // первый игрок - хост?
-    public boolean start(String syllable){
+    public boolean start(String syllable, Timer timer){
         if(gameInProgress) return false;
 
+        this.timer = timer;
         gameInProgress = true;
         currentPlayer = players.get(iter);
         currentSyllable = syllable;
 
-        for(Player p : players) p.setSpectating(false);
+        for(Player p : players) {
+            p.reset();
+            p.setSpectating(false);
+        }
 
         return true;
     }
 
-    public void passTurn(){
+    public void endGame(){
+        if (!gameInProgress) return;
+
+        gameInProgress = false;
+        currentPlayer = null;
+        currentSyllable = null;
+        currentWord = null;
+        iter = 0;
+        playersIterated = 0;
+        turnNumber = 0;
+        currentSyllableDuration = 0;
+        requiredLettersSets.clear();
+        requiredLettersSets.add(generateRequiredLetters());
+        timer = null;
+
+        for(Player p : players) p.reset();
+    }
+
+    private void passTurn(){
         currentPlayer = getNextAlivePlayer();
     }
 
@@ -168,4 +202,31 @@ public class Table {
         return requiredLettersSets.get(gen);
     }
 
+    public void turn(String newSyllable, Timer timer){
+        this.turnNumber++;
+
+        if (this.timer != null)
+            this.timer.cancel();
+
+        if (currentSyllable.equals(newSyllable))
+            currentSyllableDuration++;
+        else
+            this.currentSyllable = newSyllable;
+
+        this.setCurrentWord("");
+        this.passTurn();
+        this.timer = timer;
+    }
+
+    public int getTurnNumber() {
+        return turnNumber;
+    }
+
+    public synchronized int getCurrentSyllableDuration() {
+        return currentSyllableDuration;
+    }
+
+    public int countAlivePlayers() {
+        return (int) this.players.stream().filter(p->p.getLives()>0).count();
+    }
 }

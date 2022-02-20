@@ -3,6 +3,7 @@ package ua.leirimnad.bombgameserver.players;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang3.Validate;
 import org.springframework.web.socket.WebSocketSession;
+import ua.leirimnad.bombgameserver.Settings;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +19,7 @@ public class Player {
     private List<Character> neededCharacters;
 
     @JsonIgnore
-    private int characterSetGeneration = 0;
+    private int characterSetGeneration;
 
     @JsonIgnore
     private final WebSocketSession session;
@@ -29,8 +30,8 @@ public class Player {
 
         Validate.notNull(name, "player's name can't be null");
         this.name = name;
-        this.lives = 3;
-        this.isSpectating = true;
+
+        this.reset();
 
         this.session = session;
     }
@@ -82,5 +83,16 @@ public class Player {
 
     public void incrementLives() {
         this.lives++;
+    }
+
+    public void decrementLives() {
+        this.lives--;
+    }
+
+    public void reset(){
+        this.lives = Settings.DEFAULT_PLAYER_LIVES;
+        this.isSpectating = true;
+        this.neededCharacters = null;
+        this.characterSetGeneration = 0;
     }
 }

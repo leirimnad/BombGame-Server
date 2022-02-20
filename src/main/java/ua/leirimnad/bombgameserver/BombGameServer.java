@@ -5,13 +5,13 @@ import ua.leirimnad.bombgameserver.tables.TableManager;
 import ua.leirimnad.bombgameserver.words.WordManager;
 
 public class BombGameServer {
-    private TableManager tableManager;
-    private WordManager wordManager;
+    private final TableManager tableManager;
+    private final WordManager wordManager;
 
     // TODO make IOC
     public BombGameServer() {
-        this.tableManager = new TableManager(new PlayerManager());
         this.wordManager = new WordManager();
+        this.tableManager = new TableManager(new PlayerManager(), wordManager);
     }
 
     public TableManager getTableManager() {

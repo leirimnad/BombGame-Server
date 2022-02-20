@@ -1,7 +1,5 @@
 package ua.leirimnad.bombgameserver.tables;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.web.socket.WebSocketSession;
 import ua.leirimnad.bombgameserver.Settings;
@@ -13,21 +11,18 @@ import ua.leirimnad.bombgameserver.players.PlayerManager;
 import ua.leirimnad.bombgameserver.words.WordManager;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class TableManager {
 
     private final List<Table> tables;
     private final PlayerManager playerManager;
-    private final int ID_LENGTH = 4;
+    private final WordManager wordManager;
 
-    public TableManager(PlayerManager playerManager) {
+    public TableManager(PlayerManager playerManager, WordManager wordManager) {
         this.tables = new ArrayList<>();
         this.playerManager = playerManager;
+        this.wordManager = wordManager;
     }
 
     public void processGetTableList(WebSocketSession session, String instantQueryId) {
@@ -41,7 +36,7 @@ public class TableManager {
                     " cannot create a table because he is already playing at another table");
 
         Player host = new Player(session, playerName);
-        String tableId = generateRandomId(ID_LENGTH);
+        String tableId = generateRandomId();
         Table table = new Table(tableId, tableName, host);
 
         tables.add(table);
@@ -103,13 +98,13 @@ public class TableManager {
 
     }
 
-    public void processStartGame(WebSocketSession session, WordManager wordManager) throws ProcessingException {
+    public void processStartGame(WebSocketSession session) throws ProcessingException {
         Table table = playerManager.getTableBySession(session);
         if (table == null) throw new ProcessingException("No table found for this session");
 
         if(table.getHost().getSession().equals(session)){
-            String syllable = getNewSyllable(table, wordManager);
-            table.start(syllable);
+            String syllable = getNewSyllable(table);
+            table.start(syllable, startTimer(table, table.getTurnNumber()));
 
             playerManager.processStartGame(table);
         }
@@ -126,7 +121,7 @@ public class TableManager {
         playerManager.processUpdateWord(table, table.getCurrentPlayer());
     }
 
-    public void processConfirmWord(WebSocketSession session, WordManager wordManager) throws ProcessingException {
+    public void processConfirmWord(WebSocketSession session) throws ProcessingException {
         Table table = playerManager.getTableBySession(session);
         if (table == null) throw new ProcessingException("No table found for this session");
 
@@ -138,7 +133,7 @@ public class TableManager {
         if (!wordManager.matches(table.getCurrentWord(), table.getCurrentSyllable()))
             playerManager.processWordRejected(table);
         else {
-            String newSyllable = getNewSyllable(table, wordManager);
+            String newSyllable = getNewSyllable(table);
 
             currentPlayer.fillCharacters(table.getCurrentWord());
             if (currentPlayer.getNeededCharacters().isEmpty()){
@@ -148,17 +143,40 @@ public class TableManager {
                 );
                 playerManager.processLifeEarned(table, currentPlayer);
             }
-            table.passTurn();
-            table.setCurrentSyllable(newSyllable);
-            table.setCurrentWord("");
 
+            table.turn(newSyllable, startTimer(table, table.getTurnNumber()+1));
             playerManager.processWordAccepted(table, newSyllable,
                     wordManager.getComplexity(newSyllable), table.getCurrentPlayer());
         }
 
     }
 
-    private String getNewSyllable(Table table, WordManager wordManager){
+    public void processTimeHasRunOut(Table table) {
+        table.getCurrentPlayer().decrementLives();
+        String previousSyllable = table.getCurrentSyllable();
+
+        String newSyllable = table.getCurrentSyllable();
+        if (table.getCurrentSyllableDuration() + 1 >= Settings.SYLLABLE_ROUNDS_DURATION)
+            newSyllable = getNewSyllable(table);
+
+        if (table.countAlivePlayers() == 0){
+            table.endGame();
+            playerManager.processTimeHasRunOut(table, null,
+                    -1, null, wordManager.getPossibleWord(previousSyllable));
+        } else {
+            table.turn(newSyllable, startTimer(table, table.getTurnNumber()+1));
+
+            String possibleWord = null;
+            if(!Objects.equals(previousSyllable, newSyllable))
+                possibleWord = wordManager.getPossibleWord(previousSyllable);
+
+            playerManager.processTimeHasRunOut(table, newSyllable,
+                    wordManager.getComplexity(newSyllable), table.getCurrentPlayer(), possibleWord
+            );
+        }
+    }
+
+    private String getNewSyllable(Table table){
         float complexity = table.calculateSyllableComplexity();
         SecureRandom random = new SecureRandom();
         float minComplexity = complexity - random.nextFloat(Settings.COMPLEXITY_RANDOMNESS/2);
@@ -167,10 +185,27 @@ public class TableManager {
         return wordManager.getSyllable(minComplexity, maxComplexity);
     }
 
-    private String generateRandomId(int length){
+    public Timer startTimer(Table table, int turnNumber){
+        Timer timer = new java.util.Timer();
+        timer.schedule(
+                new java.util.TimerTask() {
+                    @Override
+                    public void run() {
+                        if(table.getTurnNumber() == turnNumber){
+                            processTimeHasRunOut(table);
+                        }
+                    }
+                },
+                Settings.TIMER_MS
+        );
+
+        return timer;
+    }
+
+    private String generateRandomId(){
         String id;
         do{
-            id = RandomStringUtils.random(length, true, false).toUpperCase(Locale.ROOT);
+            id = RandomStringUtils.random(Settings.TABLE_ID_LENGTH, true, false).toUpperCase(Locale.ROOT);
         }
         while(idExists(id));
 
