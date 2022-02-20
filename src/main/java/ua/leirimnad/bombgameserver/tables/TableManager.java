@@ -81,7 +81,8 @@ public class TableManager {
                                         .orElse(null);
         assert player != null;
 
-        boolean isCurrent = table.getCurrentPlayer().equals(player);
+
+        boolean isCurrent = table.getCurrentPlayer() != null && table.getCurrentPlayer().equals(player);
 
         table.removePlayer(player);
 
