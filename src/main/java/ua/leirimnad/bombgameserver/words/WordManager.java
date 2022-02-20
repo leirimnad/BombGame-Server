@@ -1,8 +1,6 @@
 package ua.leirimnad.bombgameserver.words;
 
 import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,12 +17,10 @@ public class WordManager {
         List<String> tempWords = new ArrayList<>();
 
         try {
-            URL resource = getClass().getClassLoader().getResource("words.txt");
-            if (resource == null)
+            InputStream is = getClass().getClassLoader().getResourceAsStream("words.txt");
+            if (is == null)
                 throw new FileNotFoundException();
-            File file = new File(resource.toURI());
-            FileInputStream fis = new FileInputStream(file);
-            InputStreamReader isr = new InputStreamReader(fis);
+            InputStreamReader isr = new InputStreamReader(is);
             BufferedReader reader = new BufferedReader(isr);
 
             // TODO все слова будут храниться в оперативной памяти?
@@ -36,7 +32,7 @@ public class WordManager {
 
             reader.close();
 
-        } catch (FileNotFoundException | URISyntaxException e) {
+        } catch (FileNotFoundException e) {
             System.out.println("File words.txt wasn't found");
             e.printStackTrace();
         } catch (IOException e) {
