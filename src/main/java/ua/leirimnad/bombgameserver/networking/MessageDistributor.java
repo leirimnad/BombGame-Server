@@ -3,17 +3,18 @@ package ua.leirimnad.bombgameserver.networking;
 import org.json.simple.JSONObject;
 import org.springframework.web.socket.WebSocketSession;
 import ua.leirimnad.bombgameserver.BombGameServer;
+import ua.leirimnad.bombgameserver.networking.server_queries.ActionConstants;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.PONG;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.QUERY_FAILURE;
 
 import java.util.List;
 import java.util.Optional;
 
-// TODO что такое instantQueryId
 public class MessageDistributor {
     private final BombGameServer server;
     private final List<String> instantQueryActions = List.of(
-            "GET_TABLE_LIST", "CREATE_TABLE", "JOIN_TABLE", "LEAVE_TABLE", "PING"
+            ActionConstants.GET_TABLE_LIST, ActionConstants.CREATE_TABLE, ActionConstants.JOIN_TABLE,
+            ActionConstants.LEAVE_TABLE, ActionConstants.PING
             );
 
     public MessageDistributor(BombGameServer server) {
@@ -31,9 +32,9 @@ public class MessageDistributor {
         }
 
         switch (action){
-            case "GET_TABLE_LIST" -> this.server.getTableManager().processGetTableList(session, instantQueryId);
+            case ActionConstants.GET_TABLE_LIST -> this.server.getTableManager().processGetTableList(session, instantQueryId);
 
-            case "CREATE_TABLE" -> {
+            case ActionConstants.CREATE_TABLE -> {
                 String tableName = (String) Optional.ofNullable(request.get("table_name"))
                         .orElseThrow(() -> new ProcessingException("table_name not found"));
 
@@ -43,7 +44,7 @@ public class MessageDistributor {
                 this.server.getTableManager().processCreateTable(session, instantQueryId, tableName, playerName);
             }
 
-            case "JOIN_TABLE" -> {
+            case ActionConstants.JOIN_TABLE -> {
                 String tableId = (String) Optional.ofNullable(request.get("table_id"))
                         .orElseThrow(() -> new ProcessingException("table_id not found"));
                 String playerName = (String) Optional.ofNullable(request.get("player_name"))
@@ -52,20 +53,20 @@ public class MessageDistributor {
                 this.server.getTableManager().processJoinTable(session, instantQueryId, tableId, playerName);
             }
 
-            case "LEAVE_TABLE" -> this.server.getTableManager().processLeaveTable(session, instantQueryId);
+            case ActionConstants.LEAVE_TABLE -> this.server.getTableManager().processLeaveTable(session, instantQueryId);
 
-            case "START_GAME" -> this.server.getTableManager().processStartGame(session);
+            case ActionConstants.START_GAME -> this.server.getTableManager().processStartGame(session);
 
-            case "UPDATE_WORD"  -> {
+            case ActionConstants.UPDATE_WORD  -> {
                 String updatedWord = (String) Optional.ofNullable(request.get("updated_word"))
                         .orElseThrow(() -> new ProcessingException("updated_word not found"));
 
                 this.server.getTableManager().processUpdateWord(session, updatedWord);
             }
 
-            case "CONFIRM_WORD" -> this.server.getTableManager().processConfirmWord(session);
+            case ActionConstants.CONFIRM_WORD -> this.server.getTableManager().processConfirmWord(session);
 
-            case "PING" -> WebSocketServer.sendActionQuery(session, new PONG());
+            case ActionConstants.PING -> WebSocketServer.sendActionQuery(session, new PONG());
         }
 
     }
