@@ -239,7 +239,7 @@ public class TableManager {
     public void processGetMyTable(WebSocketSession session, String instantQueryId) {
         if(playerManager.hasSession(session)){
             Table table = playerManager.getTableBySession(session);
-            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new GET_MY_TABLE(table.getId()));
+            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new GET_MY_TABLE(table));
         }
     }
 }
