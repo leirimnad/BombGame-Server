@@ -34,6 +34,8 @@ public class MessageDistributor {
         switch (action){
             case ActionConstants.GET_TABLE_LIST -> this.server.getTableManager().processGetTableList(session, instantQueryId);
 
+            case ActionConstants.GET_MY_TABLE -> this.server.getTableManager().processGetMyTable(session, instantQueryId);
+
             case ActionConstants.CREATE_TABLE -> {
                 String tableName = (String) Optional.ofNullable(request.get("table_name"))
                         .orElseThrow(() -> new ProcessingException("table_name not found"));

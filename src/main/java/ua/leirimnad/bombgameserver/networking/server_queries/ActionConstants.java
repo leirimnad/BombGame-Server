@@ -3,6 +3,7 @@ package ua.leirimnad.bombgameserver.networking.server_queries;
 public interface ActionConstants {
 
     String GET_TABLE_LIST = "GET_TABLE_LIST";
+    String GET_MY_TABLE = "GET_MY_TABLE";
     String CREATE_TABLE = "CREATE_TABLE";
     String DELETE_TABLE = "DELETE_TABLE";
     String JOIN_TABLE = "JOIN_TABLE";

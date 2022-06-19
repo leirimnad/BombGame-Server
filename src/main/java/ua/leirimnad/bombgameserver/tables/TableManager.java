@@ -235,4 +235,11 @@ public class TableManager {
     private void deleteTable(Table table){
         tables.remove(table);
     }
+
+    public void processGetMyTable(WebSocketSession session, String instantQueryId) {
+        if(playerManager.hasSession(session)){
+            Table table = playerManager.getTableBySession(session);
+            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new GET_MY_TABLE(table.getId()));
+        }
+    }
 }
