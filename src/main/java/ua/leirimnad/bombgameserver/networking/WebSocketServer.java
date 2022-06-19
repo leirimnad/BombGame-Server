@@ -11,9 +11,7 @@ import ua.leirimnad.bombgameserver.networking.server_queries.ServerActionQuery;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerInstantQueryResponse;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerQuery;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerQueryData;
-import ua.leirimnad.bombgameserver.networking.server_queries.data.JOIN_TABLE_SUCCESS;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.QUERY_FAILURE;
-import ua.leirimnad.bombgameserver.words.WordManager;
 
 import java.io.IOException;
 

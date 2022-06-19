@@ -46,6 +46,15 @@ public class TableManager {
 
     }
 
+    public void processDeleteTable(WebSocketSession session) throws ProcessingException {
+        Table table = playerManager.getTableBySession(session);
+        if (table == null) throw new ProcessingException("No table found for this session");
+
+        if(isHost(session, table)){
+            playerManager.processDeleteTable(table);
+            deleteTable(table);
+        }
+    }
 
     public void processJoinTable(WebSocketSession session, String instantQueryId,
                                  String tableId, String playerName) throws ProcessingException {
@@ -103,7 +112,7 @@ public class TableManager {
         Table table = playerManager.getTableBySession(session);
         if (table == null) throw new ProcessingException("No table found for this session");
 
-        if(table.getHost().getSession().equals(session)){
+        if(isHost(session, table)){
             String syllable = getNewSyllable(table);
             table.start(syllable, startTimer(table, table.getTurnNumber()));
 
@@ -219,6 +228,11 @@ public class TableManager {
                 .anyMatch(t -> t.getId().equals(id));
     }
 
+    private boolean isHost(WebSocketSession session, Table table){
+        return table.getHost().getSession().equals(session);
+    }
 
-
+    private void deleteTable(Table table){
+        tables.remove(table);
+    }
 }

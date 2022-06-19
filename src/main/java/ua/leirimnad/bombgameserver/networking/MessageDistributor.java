@@ -13,8 +13,8 @@ import java.util.Optional;
 public class MessageDistributor {
     private final BombGameServer server;
     private final List<String> instantQueryActions = List.of(
-            ActionConstants.GET_TABLE_LIST, ActionConstants.CREATE_TABLE, ActionConstants.JOIN_TABLE,
-            ActionConstants.LEAVE_TABLE, ActionConstants.PING
+            ActionConstants.GET_TABLE_LIST, ActionConstants.CREATE_TABLE,
+            ActionConstants.JOIN_TABLE, ActionConstants.LEAVE_TABLE, ActionConstants.PING
             );
 
     public MessageDistributor(BombGameServer server) {
@@ -43,6 +43,8 @@ public class MessageDistributor {
 
                 this.server.getTableManager().processCreateTable(session, instantQueryId, tableName, playerName);
             }
+
+            case ActionConstants.DELETE_TABLE -> this.server.getTableManager().processDeleteTable(session);
 
             case ActionConstants.JOIN_TABLE -> {
                 String tableId = (String) Optional.ofNullable(request.get("table_id"))

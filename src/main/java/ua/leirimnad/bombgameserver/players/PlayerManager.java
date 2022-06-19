@@ -5,7 +5,6 @@ import ua.leirimnad.bombgameserver.networking.WebSocketServer;
 import ua.leirimnad.bombgameserver.networking.server_queries.ServerQueryData;
 import ua.leirimnad.bombgameserver.networking.server_queries.data.*;
 import ua.leirimnad.bombgameserver.tables.Table;
-import ua.leirimnad.bombgameserver.words.WordManager;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,6 +34,11 @@ public class PlayerManager {
     public void processLeavePlayer(Table table, Player player, Player nextPlayer) {
         tableMap.remove(player.getSession());
         sendToAll(table, new PLAYER_LEFT(player, nextPlayer), player);
+    }
+
+    public void processDeleteTable(Table table){
+        table.getPlayers().stream().map(Player::getSession).forEach(tableMap::remove);
+        sendToAll(table,new TABLE_DELETED(table));
     }
 
     public void processStartGame(Table table) {

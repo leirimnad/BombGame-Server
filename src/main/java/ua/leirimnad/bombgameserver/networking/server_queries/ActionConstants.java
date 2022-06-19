@@ -4,6 +4,7 @@ public interface ActionConstants {
 
     String GET_TABLE_LIST = "GET_TABLE_LIST";
     String CREATE_TABLE = "CREATE_TABLE";
+    String DELETE_TABLE = "DELETE_TABLE";
     String JOIN_TABLE = "JOIN_TABLE";
     String LEAVE_TABLE = "LEAVE_TABLE";
     String START_GAME = "START_GAME";
