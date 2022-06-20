@@ -240,6 +240,8 @@ public class TableManager {
         if(playerManager.hasSession(session)){
             Table table = playerManager.getTableBySession(session);
             WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new MY_TABLE(table));
+        } else {
+            WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new NO_MY_TABLE());
         }
     }
 }
