@@ -10,7 +10,6 @@ public class WordManager {
     private final Map<String, Float> popular_words;
     private final Map<String, Float> syllables_2, syllables_3, syllables_4;
 
-
     public WordManager() {
 
         // init words
@@ -139,6 +138,10 @@ public class WordManager {
                         .contains(syllable.toLowerCase(Locale.ROOT))
         ).sorted((e1, e2) -> (int) Math.signum(e1.getValue() - e2.getValue())).toList();
 
+        if (applicable.size() == 0) {
+            return getPossibleWordFromFullList(syllable);
+        }
+
         for (int i = 1; i < applicable.size(); i++) {
             applicable.get(i).setValue(applicable.get(i).getValue()+applicable.get(i).getValue());
         }
@@ -150,5 +153,33 @@ public class WordManager {
                 .findFirst()
                 .orElse(new AbstractMap.SimpleEntry<>("None", 0.0f))
                 .getKey();
+    }
+
+    private String getPossibleWordFromFullList(String syllable){
+        try {
+            InputStream is = getClass().getClassLoader().getResourceAsStream("words.txt");
+
+            if (is == null)
+                throw new FileNotFoundException();
+            InputStreamReader isr = new InputStreamReader(is);
+            BufferedReader reader = new BufferedReader(isr);
+
+            while (true) {
+                String line = reader.readLine();
+                if (line == null) break;
+
+                if(line.toLowerCase(Locale.ROOT).contains(syllable.toLowerCase(Locale.ROOT)))
+                    return line.trim();
+            }
+
+        } catch(FileNotFoundException e) {
+            System.out.println("Syllable "+syllable+" wasn't found in the list of words");
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("Syllable "+syllable+" wasn't found in the list of words");
+        return "None";
     }
 }
