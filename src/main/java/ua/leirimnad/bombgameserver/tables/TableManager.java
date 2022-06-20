@@ -81,13 +81,22 @@ public class TableManager {
 
     // должен ли меняться слог, после того как вышел игрок?
     public void processLeaveTable(WebSocketSession session, String instantQueryId) throws ProcessingException {
+        removePlayer(session);
+        WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new LEAVE_TABLE_SUCCESS());
+    }
+
+    public void processPlayerDisconnect(WebSocketSession session) throws ProcessingException {
+        removePlayer(session);
+    }
+
+    private void removePlayer(WebSocketSession session) throws ProcessingException {
         Table table = playerManager.getTableBySession(session);
         if (table == null) throw new ProcessingException("No table found for this session");
 
         Player player = table.getPlayers().stream()
-                                        .filter(p -> p.getSession().equals(session))
-                                        .findFirst()
-                                        .orElse(null);
+                .filter(p -> p.getSession().equals(session))
+                .findFirst()
+                .orElse(null);
         assert player != null;
 
 
@@ -103,9 +112,6 @@ public class TableManager {
 
         if(table.getPlayers().isEmpty())
             tables.remove(table);
-
-        WebSocketServer.sendInstantQueryResponse(session, instantQueryId, new LEAVE_TABLE_SUCCESS());
-
     }
 
     public void processStartGame(WebSocketSession session) throws ProcessingException {
@@ -134,6 +140,7 @@ public class TableManager {
     public void processConfirmWord(WebSocketSession session) throws ProcessingException {
         Table table = playerManager.getTableBySession(session);
         if (table == null) throw new ProcessingException("No table found for this session");
+        if (!table.isGameInProgress()) throw new ProcessingException("Game on the table is not in progress");
 
         Player currentPlayer = table.getCurrentPlayer();
 
