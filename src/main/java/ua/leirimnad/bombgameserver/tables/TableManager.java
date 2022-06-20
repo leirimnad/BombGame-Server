@@ -86,7 +86,8 @@ public class TableManager {
     }
 
     public void processPlayerDisconnect(WebSocketSession session) throws ProcessingException {
-        removePlayer(session);
+        if(playerManager.getTableBySession(session) != null)
+            removePlayer(session);
     }
 
     private void removePlayer(WebSocketSession session) throws ProcessingException {
